@@ -24,7 +24,7 @@ The library can be installed using composer. Add the following to your `composer
 
 ## Usage
 
-```
+``` php
 use LegalThings/Authorizer;
 
 class FooController
