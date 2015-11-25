@@ -14,6 +14,13 @@ class Authorizer
     public static $globalSecret;
 
     /**
+     * Path to the private key of the current application
+     * @var string
+     */
+    public static $privateKeyPath;
+
+
+    /**
      * Sign a resource, granting access to a specific client
      * 
      * @param string   $allowedResource
@@ -41,6 +48,21 @@ class Authorizer
     }
 
     /**
+     * Decrypt an encrypted secret
+     * 
+     * @param string   $encryptedSecret  An encrypted secret with the format:
+     *                                   {{resource}};{{time_from}};{{time_to}};{{hash}}
+     *
+     * @return string  $decryptedSecret  String with the format: {{time_from}};{{time_to}};{{checksum}}
+     */
+    public static function decrypt($encryptedSecret)
+    {
+        openssl_private_decrypt($encryptedSecret, $decryptedSecret, self::getPrivateKey());
+
+        return $decryptedSecret;
+    }
+
+    /**
      * Verify if a resource may be accessed by the client
      * 
      * @param string    $allowedResource
@@ -54,7 +76,7 @@ class Authorizer
 
         list($timeStart, $timeEnd, $checksum) = explode(';', $decryptedSecret) + [null, null, null];
 
-        if ($checksum !== self::generateChecksum($allowedResource, $timeStart, $timeEnd) return false;
+        if ($checksum !== self::generateChecksum($allowedResource, $timeStart, $timeEnd)) return false;
 
         $timeStart = strlen($timeStart) > 0 ? (int)$timeStart : ($currentTime - 1);
         $timeEnd = strlen($timeEnd) > 0 ? (int)$timeEnd : ($currentTime + 1);
@@ -73,26 +95,23 @@ class Authorizer
      *
      * @return string
      */
-    private static function generateChecksum($allowedResource, $timeStart, $timeEnd)
+    protected static function generateChecksum($allowedResource, $timeStart, $timeEnd)
     {
-        return hash('sha256', $allowedResource . $_SERVER['HTTP_HOST'] . $timeStart . $timeEnd . self::$globalSecret)
+        return hash('sha256', $allowedResource . $_SERVER['HTTP_HOST'] . $timeStart . $timeEnd . self::$globalSecret);
     }
 
     /**
-     * Decrypt an encrypted secret
-     * 
-     * @param string   $encryptedSecret  An encrypted secret with the format:
-     *                                   {{resource}};{{time_from}};{{time_to}};{{hash}}
-     * @param string   $privateKeyPath   Path to the private key of the current application
+     * Get a private key
      *
-     * @return string  $decryptedSecret  String with the format: {{time_from}};{{time_to}};{{checksum}}
+     * @return string
      */
-    public static function decrypt($encryptedSecret, $privateKeyPath)
+    protected static function getPrivateKey()
     {
-        $privateKey = file_get_contents($privateKeyPath);
-        openssl_private_decrypt($encryptedSecret, $decryptedSecret, $privateKey);
+        if (!isset(self::$privateKeyPath)) trigger_error('$privateKeyPath is not set', E_USER_WARNING);
 
-        return $decryptedSecret;
+        $privateKey = file_get_contents(self::$privateKeyPath);
+
+        return $privateKey;
     }
 
     /**
@@ -103,9 +122,9 @@ class Authorizer
      *
      * @return string
      */
-    private static function downloadPublicKey($url, $options = [])
+    protected static function downloadPublicKey($url, $options = [])
     {
-        $client = new GuzzleHttp\Client();
+        $client = new \GuzzleHttp\Client();
         $res = $client->get($url, $options);
 
         return (string)$res->getBody();
