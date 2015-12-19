@@ -13,18 +13,9 @@ _Required PHP extensions are marked by composer_
 
 ## Installation
 
-The library can be installed using composer. Add the following to your `composer.json`:
+The library can be installed using composer.
 
-    "repositories": [
-        {
-            "type": "vcs",
-            "url": "https://github.com/legalthings/authorizer"
-        }
-    ],
-    require: {
-        "legalthings/authorizer": "~0.1.0"
-    }
-
+    composer require legalthings/authorizer
 
 ## How it works
 
@@ -72,10 +63,10 @@ if (!$mayAccess) {
 
 // Get and output resource
 header('Content-Type: application/pdf');
-readfile('../resources/' . $resource);
+readfile('path/to/resources/' . $pdf);
 ```
 
-**System B (can download and store resources)**
+**System B (can download and use resources)**
 ```php
 use LegalThings/Authorizer;
 
@@ -91,13 +82,13 @@ $pdf = file_get_contents($link);
 
 // Let's do something with the PDF
 $username = $_SESSION['username'];
-file_put_contents("../userdata/$username/" . md5(microtime()) . ".pdf");
+file_put_contents("../userdata/$username/" . md5(microtime()) . ".pdf", $pdf);
 ```
 
-**Client (provides access to the resource to system B)**
+**Client**
 ```sh
-LINK=http://system-a.example.com/get-pdf.php?pdf=abc.pdf
-ENCRYPTED_TOKEN=$(curl --get $LINK --data authzgen=http://system-b.example.com/authorizer.pem)
+LINK="http://system-a.example.com/get-pdf.php?pdf=abc.pdf"
+ENCRYPTED_TOKEN=$(curl --get "$LINK" --data-urlencode "authzgen=http://system-b.example.com/authorizer.pem")
 curl --post "http://system-b.example.com/use-pdf.php" --data-urlencode "link=$LINK" --data-urlencode "authz=$ENCRYPTED_TOKEN"
 ```
 
