@@ -19,6 +19,12 @@ class Authorizer
      */
     public static $privateKeyPath;
 
+    /**
+     * Path to the public key of the current application
+     * @var string
+     */
+    public static $publicKeyPath;
+
 
     /**
      * Sign a resource, granting access to a specific client
@@ -98,6 +104,24 @@ class Authorizer
     protected static function generateChecksum($allowedResource, $timeStart, $timeEnd)
     {
         return hash('sha256', $allowedResource . $_SERVER['HTTP_HOST'] . $timeStart . $timeEnd . self::$globalSecret);
+    }
+
+    /**
+     * Get a public key
+     *
+     * @return string
+     */
+    public static function getPublicKey()
+    {
+        if (!isset(self::$publicKeyPath)) trigger_error('$publicKeyPath is not set', E_USER_WARNING);
+
+        $publicKey = file_get_contents(self::$publicKeyPath);
+
+        if (stripos($publicKey, '-----BEGIN PUBLIC KEY-----') !== 0) {
+            trigger_error('received invalid public key', E_USER_ERROR);
+        }
+
+        return $publicKey;
     }
 
     /**
