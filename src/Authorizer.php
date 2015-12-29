@@ -19,6 +19,12 @@ class Authorizer
      */
     public static $privateKeyPath;
 
+    /**
+     * Path to the public key of the current application
+     * @var string
+     */
+    public static $publicKeyPath;
+
 
     /**
      * Sign a resource, granting access to a specific client
@@ -34,7 +40,7 @@ class Authorizer
 
         list($cerfiticateUrl, $timeStart, $timeEnd) = explode(';', $authzgen) + [null, null, null];
 
-        $publicKey = self::downloadPublicKey($cerfiticateUrl);
+        $publicKey = self::downloadSigningKey($cerfiticateUrl);
 
         $resourceSecret = join(';', [
             $timeStart,
@@ -67,7 +73,6 @@ class Authorizer
      * 
      * @param string    $allowedResource
      * @param string    $decryptedSecret  can be retrieved with static::decrypt()
-     *
      * @return boolean
      */
     public static function verify($allowedResource, $decryptedSecret)
@@ -92,12 +97,28 @@ class Authorizer
      * @param string   $allowedResource
      * @param string   $timeStart
      * @param string   $timeEnd
-     *
      * @return string
      */
     protected static function generateChecksum($allowedResource, $timeStart, $timeEnd)
     {
         return hash('sha256', $allowedResource . $_SERVER['HTTP_HOST'] . $timeStart . $timeEnd . self::$globalSecret);
+    }
+
+    /**
+     * Get a public key
+     *
+     * @return string
+     */
+    public static function getPublicKey()
+    {
+        if (!isset(self::$publicKeyPath)) {
+            throw new RuntimeException('Path to the authorizer public key is not set');
+        }
+
+        $publicKey = file_get_contents(self::$publicKeyPath);
+        self::assertIsValidKey('public', $publicKey, self::$publicKeyPath);
+        
+        return $publicKey;
     }
 
     /**
@@ -107,10 +128,13 @@ class Authorizer
      */
     protected static function getPrivateKey()
     {
-        if (!isset(self::$privateKeyPath)) trigger_error('$privateKeyPath is not set', E_USER_WARNING);
+        if (!isset(self::$privateKeyPath)) {
+            throw new RuntimeException('Path to the authorizer private key is not set');
+        }
 
         $privateKey = file_get_contents(self::$privateKeyPath);
-
+        self::assertIsValidKey('private', $privateKey, self::$privateKeyPath);
+        
         return $privateKey;
     }
 
@@ -119,14 +143,31 @@ class Authorizer
      * 
      * @param string   $url
      * @param string   $options  Options for the guzzle request
-     *
      * @return string
      */
-    protected static function downloadPublicKey($url, $options = [])
+    protected static function downloadSigningKey($url, $options = [])
     {
         $client = new \GuzzleHttp\Client();
         $res = $client->get($url, $options);
 
-        return (string)$res->getBody();
+        $publicKey = $res->getBody();
+        self::assertIsValidKey('public', $publicKey, $url);
+        
+        return $publicKey;
+    }
+    
+    /**
+     * Check if it's a valid public or private key
+     *
+     * @param string $type  'public' or 'private'     
+     * @param string $key
+     * @param string $path
+     * @throws RuntimeException
+     */
+    protected static function assertIsValidKey($type, $key, $path)
+    {
+        if (!preg_match('/^-----BEGIN (RSA |DSA )?' . strtoupper($type) . ' KEY-----/', $key)) {
+            throw new RuntimeException("Invalid $type key: $path");
+        }
     }
 }

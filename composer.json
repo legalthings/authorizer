@@ -8,7 +8,8 @@
     "require-dev": {
         "codeception/specify": "0.4.1",
         "codeception/phpbuiltinserver": "v1.2.1",
-        "codeception/codeception": "2.0.13"        
+        "codeception/codeception": "2.0.13",
+        "aws/aws-sdk-php": "^3.12"        
     },
     "autoload": {
         "psr-4": {
