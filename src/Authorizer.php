@@ -32,7 +32,7 @@ class Authorizer
      * @param string   $allowedResource
      * @param string   $authzgen         String with the format: {{certificate_url}};{{time_from}};{{time_to}}
      *                                   Time restrictions are unix timestamps, but may be omitted 
-     * @return string  $encryptedSecret
+     * @return string  $encryptedSecret  An utf8_encoded encrypted secret
      */
     public static function sign($allowedResource, $authzgen)
     {
@@ -50,20 +50,20 @@ class Authorizer
 
         openssl_public_encrypt($resourceSecret, $encryptedSecret, $publicKey);
 
-        return $encryptedSecret;
+        return utf8_encode($encryptedSecret);
     }
 
     /**
      * Decrypt an encrypted secret
      * 
-     * @param string   $encryptedSecret  An encrypted secret with the format:
+     * @param string   $encryptedSecret  An utf8_encoded encrypted secret with the format:
      *                                   {{resource}};{{time_from}};{{time_to}};{{hash}}
      *
      * @return string  $decryptedSecret  String with the format: {{time_from}};{{time_to}};{{checksum}}
      */
     public static function decrypt($encryptedSecret)
     {
-        openssl_private_decrypt($encryptedSecret, $decryptedSecret, self::getPrivateKey());
+        openssl_private_decrypt(utf8_decode($encryptedSecret), $decryptedSecret, self::getPrivateKey());
 
         return $decryptedSecret;
     }
