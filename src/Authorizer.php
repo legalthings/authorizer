@@ -145,7 +145,7 @@ class Authorizer
      * @param string   $options  Options for the guzzle request
      * @return string
      */
-    protected static function downloadSigningKey($url, $options = [])
+    public static function downloadSigningKey($url, $options = [])
     {
         $client = new \GuzzleHttp\Client();
         $res = $client->get($url, $options);
