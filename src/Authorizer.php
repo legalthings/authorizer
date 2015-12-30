@@ -112,7 +112,7 @@ class Authorizer
     public static function getPublicKey()
     {
         if (!isset(self::$publicKeyPath)) {
-            throw new RuntimeException('Path to the authorizer public key is not set');
+            throw new \RuntimeException('Path to the authorizer public key is not set');
         }
 
         $publicKey = file_get_contents(self::$publicKeyPath);
@@ -129,7 +129,7 @@ class Authorizer
     protected static function getPrivateKey()
     {
         if (!isset(self::$privateKeyPath)) {
-            throw new RuntimeException('Path to the authorizer private key is not set');
+            throw new \RuntimeException('Path to the authorizer private key is not set');
         }
 
         $privateKey = file_get_contents(self::$privateKeyPath);
@@ -167,7 +167,7 @@ class Authorizer
     protected static function assertIsValidKey($type, $key, $path)
     {
         if (!preg_match('/^-----BEGIN (RSA |DSA )?' . strtoupper($type) . ' KEY-----/', $key)) {
-            throw new RuntimeException("Invalid $type key: $path");
+            throw new \RuntimeException("Invalid $type key: $path");
         }
     }
 }
