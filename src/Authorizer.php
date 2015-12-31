@@ -50,7 +50,7 @@ class Authorizer
 
         openssl_public_encrypt($resourceSecret, $encryptedSecret, $publicKey);
 
-        return utf8_encode($encryptedSecret);
+        return base64_encode($encryptedSecret);
     }
 
     /**
@@ -63,7 +63,7 @@ class Authorizer
      */
     public static function decrypt($encryptedSecret)
     {
-        openssl_private_decrypt(utf8_decode($encryptedSecret), $decryptedSecret, self::getPrivateKey());
+        openssl_private_decrypt(base64_decode($encryptedSecret), $decryptedSecret, self::getPrivateKey());
 
         return $decryptedSecret;
     }
