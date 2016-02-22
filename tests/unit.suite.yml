@@ -1,0 +1,11 @@
+class_name: UnitTester
+modules:
+    enabled: 
+        - Asserts
+        - UnitHelper
+        
+coverage:
+    enabled: true
+    remote: false
+    include:
+        - lib/*

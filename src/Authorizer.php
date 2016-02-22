@@ -34,13 +34,13 @@ class Authorizer
      *                                   Time restrictions are unix timestamps, but may be omitted 
      * @return string  $encryptedSecret  An utf8_encoded encrypted secret
      */
-    public static function sign($allowedResource, $authzgen)
+    public static function sign($allowedResource, $authzgen, $handler = null)
     {
         if (!isset(self::$globalSecret)) trigger_error('$globalSecret is not set', E_USER_WARNING);
 
         list($cerfiticateUrl, $timeStart, $timeEnd) = explode(';', $authzgen) + [null, null, null];
 
-        $publicKey = self::downloadSigningKey($cerfiticateUrl);
+        $publicKey = self::downloadSigningKey($cerfiticateUrl, ['handler' => $handler]);
 
         $resourceSecret = join(';', [
             $timeStart,
@@ -114,6 +114,10 @@ class Authorizer
         if (!isset(self::$publicKeyPath)) {
             throw new \RuntimeException('Path to the authorizer public key is not set');
         }
+        
+        if(!file_exists (self::$publicKeyPath)) {
+            throw new \RuntimeException('Path to public key does not exist');
+        }
 
         $publicKey = file_get_contents(self::$publicKeyPath);
         self::assertIsValidKey('public', $publicKey, self::$publicKeyPath);
@@ -131,11 +135,66 @@ class Authorizer
         if (!isset(self::$privateKeyPath)) {
             throw new \RuntimeException('Path to the authorizer private key is not set');
         }
+        
+        if(!file_exists (self::$privateKeyPath)) {
+            throw new \RuntimeException('Path to private key does not exist');
+        }
 
         $privateKey = file_get_contents(self::$privateKeyPath);
         self::assertIsValidKey('private', $privateKey, self::$privateKeyPath);
         
         return $privateKey;
+    }
+    
+    /**
+     * Generate a private key
+     * 
+     * @param array $options
+     * @throws RuntimeException
+     * @return string
+     */
+    public static function createPrivateKey($options = []) {
+        
+        if (!isset(self::$privateKeyPath)) {
+            throw new \RuntimeException('Path to the authorizer private key is not set');
+        }
+        
+        if(file_exists (self::$privateKeyPath)) {
+            throw new \RuntimeException('Private key already exists');
+        }
+        
+        $config = array(
+            "digest_alg" => "sha512",
+            "private_key_bits" => 2048,
+            "private_key_type" => OPENSSL_KEYTYPE_RSA,
+        );
+        
+        $config = $options + $config;
+        
+        $res = openssl_pkey_new($config);
+        openssl_pkey_export($res, $key);
+        file_put_contents(self::$privateKeyPath, $key);
+        return $key;
+    }
+    
+    /**
+     * Generate a public based on existing private keyu
+     * @throws \RuntimeException
+     * @return string
+     */
+    public static function createPublicKey() {
+        if (!isset(self::$publicKeyPath)) {
+            throw new \RuntimeException('Path to the authorizer public key is not set');
+        }
+        
+        if(file_exists (self::$publicKeyPath)) {
+            throw new \RuntimeException('Public key already exists');
+        }
+        $privateKey = openssl_get_privatekey(self::getPrivateKey());
+        $pubKey = openssl_pkey_get_details($privateKey);
+        $key = $pubKey["key"];
+        file_put_contents(self::$publicKeyPath, $key);
+        return $key;
     }
 
     /**
