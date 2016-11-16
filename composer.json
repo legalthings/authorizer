@@ -3,7 +3,7 @@
 	"description" : "Authorizer for HTTP requests",
 	"license" : "MIT",
 	"require" : {
-		"guzzlehttp/guzzle": "^6.1"
+		"guzzlehttp/guzzle": "^5.0 || ^6.0"
 	},
 	"require-dev" : {
 		"codeception/codeception": "^2.1"
