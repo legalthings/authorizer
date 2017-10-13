@@ -17,6 +17,9 @@ class AuthorizerTest extends Test
     // executed before each test
     protected function _before()
     {
+        if(file_exists(self::KEYS_DIR)) {
+            rmdir(self::KEYS_DIR);
+        }
         mkdir(self::KEYS_DIR, 0700, TRUE);
         Authorizer::$globalSecret = "testsecret";
         Authorizer::$privateKeyPath = self::KEYS_DIR . "/private_key.pem";
@@ -63,7 +66,6 @@ class AuthorizerTest extends Test
         
         Authorizer::$privateKeyPath = "tests/_data/private_key.pem";
         Authorizer::$publicKeyPath = "tests/_data/public_key.pem";
-        
         $_SERVER['HTTP_HOST'] = "example.com";
         
         $resource = "secret resource";
@@ -71,12 +73,14 @@ class AuthorizerTest extends Test
         $endTime = $startTime + 500;
         
         $mock = new MockHandler([
+            new Response(200, [], Authorizer::getPublicKey()),
             new Response(200, [], Authorizer::getPublicKey())
         ]);
         $handler = HandlerStack::create($mock);
         $encryptedSecret = Authorizer::sign($resource, "http://example.com/public_key.pem;$startTime;$endTime", $handler);
         
         $decrypted = Authorizer::decrypt($encryptedSecret);
+        
         $values = explode(";", $decrypted);
         $this->assertEquals($startTime, $values[0]);
         $this->assertEquals($endTime, $values[1]);
