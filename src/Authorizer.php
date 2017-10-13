@@ -49,6 +49,8 @@ class Authorizer
         ]);
 
         openssl_public_encrypt($resourceSecret, $encryptedSecret, $publicKey);
+        
+        self::clearOpenSSLErrors();
 
         return base64_encode($encryptedSecret);
     }
@@ -173,6 +175,7 @@ class Authorizer
         
         $res = openssl_pkey_new($config);
         openssl_pkey_export($res, $key);
+        self::clearOpenSSLErrors();
         file_put_contents(self::$privateKeyPath, $key);
         return $key;
     }
@@ -193,6 +196,7 @@ class Authorizer
         $privateKey = openssl_get_privatekey(self::getPrivateKey());
         $pubKey = openssl_pkey_get_details($privateKey);
         $key = $pubKey["key"];
+        self::clearOpenSSLErrors();
         file_put_contents(self::$publicKeyPath, $key);
         return $key;
     }
@@ -227,6 +231,13 @@ class Authorizer
     {
         if (!preg_match('/^-----BEGIN (RSA |DSA )?' . strtoupper($type) . ' KEY-----/', $key)) {
             throw new \RuntimeException("Invalid $type key: $path");
+        }
+    }
+    
+    protected static function clearOpenSSLErrors()
+    {
+        while($message = openssl_error_string()){ 
+            continue;
         }
     }
 }
