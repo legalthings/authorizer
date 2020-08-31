@@ -39,8 +39,9 @@ class Authorizer
         if (!isset(self::$globalSecret)) trigger_error('$globalSecret is not set', E_USER_WARNING);
 
         list($cerfiticateUrl, $timeStart, $timeEnd) = explode(';', $authzgen) + [null, null, null];
+        $opts = $handler !== null ? ['handler' => $handler] : [];
 
-        $publicKey = self::downloadSigningKey($cerfiticateUrl, ['handler' => $handler]);
+        $publicKey = self::downloadSigningKey($cerfiticateUrl, $opts);
 
         $resourceSecret = join(';', [
             $timeStart,
